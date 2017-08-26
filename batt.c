@@ -1,10 +1,17 @@
-int initUART(int mgrnum, char *uartnum) {
+#include <errno.h>
+#include <fcntl.h> 
+#include <string.h>
+#include <termios.h>
+#include <unistd.h>
+#include <stdio.h>
+
+int initUART() {
   // return the int reference to the port
   struct termios old;
   struct termios new;
   int fd;
 
-  fd = open("/dev/ttyO4", O_RDWR | O_NOCTTY);
+  fd = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY);
   if (fd < 0) {
     printf("Port failed to open\n");
     return fd;
@@ -13,12 +20,12 @@ int initUART(int mgrnum, char *uartnum) {
   tcgetattr(fd, &old);
   bzero(&new, sizeof(new));
 
-  new.c_cflag = B4800 | CS8 | CLOCAL | CREAD;
+  new.c_cflag = B9600 | CS8 | CLOCAL | CREAD;
   new.c_iflag = IGNPAR | ICRNL;
   new.c_oflag = 0;
   new.c_lflag = 0;
 
-  new.c_cc[VTIME] = 5;
+  new.c_cc[VTIME] = 0;
   new.c_cc[VMIN] = 1;
 
   // clean the line and set the attributes
@@ -30,7 +37,7 @@ int initUART(int mgrnum, char *uartnum) {
 
 void closeUART(int fd) { close(fd); }
 
-int configUART(UART u, int property, char *value) {
+int configUART(int u, int property, char *value) {
   // This is used to set the configuration values
   // for the uart module
 
@@ -62,10 +69,28 @@ int strUART(int uart, char *buf) {
   return 0;
 }
 
-int get_current(){
+/*int txStringUart(int uart, unsigned char*data) {
+  while *data
+}*/
 
+char getCurrent(int uart){
+  printf("Getting Current\n");
+  char *current  = "0322F00C\n";
+  printf("Sending command: %s", current);
+  for (int i = 0; i < strlen(current); i++){
+    printf("Sending bit %d\n", i);
+    txUART(uart, current[i]);
+  }
+;  printf("Done Sending\n");
+  unsigned char data;
+  int n = read(uart, &data, 1);
+  return data;
 }
 
-void main() {
-
-};
+void main(){
+  int uart;
+  uart = initUART();
+  char *current = getCurrent(uart);
+  printf("Pack Current (A): %s\n", current);
+  closeUART(uart);
+}
